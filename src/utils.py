@@ -1,15 +1,15 @@
-import os
-import sys
+import datetime
 import glob
 import json
-import datetime
-from collections import Counter
+import os
+import sys
 from collections import Counter
 
 import pandas as pd
-from matplotlib import pyplot as plt
 import seaborn as sns
+from matplotlib import pyplot as plt
 from nltk.corpus import stopwords
+
 
 def slack_parser(path_channel):
     """ parse slack data to extract useful informations from the json file
@@ -26,7 +26,14 @@ def slack_parser(path_channel):
     combined = []
     for json_file in glob.glob(f"{path_channel}*.json"):
         with open(json_file, 'r', encoding="utf8") as slack_data:
-            combined.append(slack_data)
+
+            # combined.append(slack_data)    commented this one it b/c it wasn't loading the json content
+            # Load the JSON content from the file
+            json_content = json.load(slack_data)
+  
+            # Append the JSON content to the combined list
+            combined.append(json_content)
+
 
     # loop through all json files and extract required informations
     dflist = []
@@ -106,6 +113,21 @@ def parse_slack_reaction(path, channel):
     return df_reaction
 
 def get_community_participation(path):
+    """ specify path to get json files"""
+    combined = []
+    comm_dict = {}
+    for json_file in glob.glob(f"{path}*.json"):
+        with open(json_file, 'r') as slack_data:
+            combined.append(slack_data)
+    # print(f"Total json files is {len(combined)}")
+    for i in combined:
+        a = json.load(open(i.name, 'r', encoding='utf-8'))
+
+        for msg in a:
+            if 'replies' in msg.keys():
+                for i in msg['replies']:
+                    comm_dict[i['user']] = comm_dict.get(i['user'], 0)+1
+    return comm_dict
 
 def break_combined_weeks(combined_weeks):
     """
@@ -161,6 +183,7 @@ def get_messages_dict(msgs):
 
 
     for msg in msgs:
+        
         if "subtype" not in msg:
             try:
                 msg_list["msg_id"].append(msg["client_msg_id"])
@@ -170,7 +193,7 @@ def get_messages_dict(msgs):
             msg_list["text"].append(msg["text"])
             msg_list["user"].append(msg["user"])
             msg_list["ts"].append(msg["ts"])
-            
+          
             if "reactions" in msg:
                 msg_list["reactions"].append(msg["reactions"])
             else:
@@ -219,6 +242,8 @@ def get_messages_dict(msgs):
                 msg_list["mentions"].append(None)
                 msg_list["links"].append(None)
                 msg_list["link_count"].append(0)
+                
+           
     
     return msg_list
 
@@ -257,8 +282,11 @@ def get_messages_from_channel(channel_path):
     '''
     channel_json_files = os.listdir(channel_path)
     channel_msgs = [json.load(open(channel_path + "/" + f)) for f in channel_json_files]
+   
 
-    df = pd.concat([pd.DataFrame(get_messages_dict(msgs)) for msgs in channel_msgs])
+    #editted to handle issue array miss match
+    df = pd.concat([pd.DataFrame([get_messages_dict(msgs)])  for msgs in channel_msgs])
+    
     print(f"Number of messages in channel: {len(df)}")
     
     return df
