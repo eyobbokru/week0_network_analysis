@@ -60,6 +60,20 @@ class SlackDataLoader:
         write a function to get all the messages from a channel
         
         '''
+      
+        '''
+        get all the messages from a channel        
+        '''
+        channel_json_files = os.listdir(channel_name)
+        channel_msgs = [json.load(open(channel_name + "/" + f)) for f in channel_json_files]
+       
+    
+        #editted to handle issue array miss match
+        df = pd.concat([pd.DataFrame([self.get_messages_dict(msgs)])  for msgs in channel_msgs])
+        
+        print(f"Number of messages in channel: {len(df)}")
+        
+        return df
 
     # 
     def get_user_map(self):
@@ -71,7 +85,86 @@ class SlackDataLoader:
         for user in self.users:
             userNamesById[user['id']] = user['name']
             userIdsByName[user['name']] = user['id']
-        return userNamesById, userIdsByName        
+        return userNamesById, userIdsByName  
+        
+    @staticmethod
+    def get_messages_dict(msgs):
+        msg_list = {
+                "msg_id":[],
+                "text":[],
+                "attachments":[],
+                "user":[],
+                "mentions":[],
+                "emojis":[],
+                "reactions":[],
+                "replies":[],
+                "replies_to":[],
+                "ts":[],
+                "links":[],
+                "link_count":[]
+                }
+        for msg in msgs:
+            
+            if "subtype" not in msg:
+                try:
+                    msg_list["msg_id"].append(msg["client_msg_id"])
+                except:
+                    msg_list["msg_id"].append(None)
+                
+                msg_list["text"].append(msg["text"])
+                msg_list["user"].append(msg["user"])
+                msg_list["ts"].append(msg["ts"])
+              
+                if "reactions" in msg:
+                    msg_list["reactions"].append(msg["reactions"])
+                else:
+                    msg_list["reactions"].append(None)
+    
+                if "parent_user_id" in msg:
+                    msg_list["replies_to"].append(msg["ts"])
+                else:
+                    msg_list["replies_to"].append(None)
+    
+                if "thread_ts" in msg and "reply_users" in msg:
+                    msg_list["replies"].append(msg["replies"])
+                else:
+                    msg_list["replies"].append(None)
+                
+                if "blocks" in msg:
+                    emoji_list = []
+                    mention_list = []
+                    link_count = 0
+                    links = []
+                    
+                    for blk in msg["blocks"]:
+                        if "elements" in blk:
+                            for elm in blk["elements"]:
+                                if "elements" in elm:
+                                    for elm_ in elm["elements"]:
+                                        
+                                        if "type" in elm_:
+                                            if elm_["type"] == "emoji":
+                                                emoji_list.append(elm_["name"])
+    
+                                            if elm_["type"] == "user":
+                                                mention_list.append(elm_["user_id"])
+                                            
+                                            if elm_["type"] == "link":
+                                                link_count += 1
+                                                links.append(elm_["url"])
+    
+    
+                    msg_list["emojis"].append(emoji_list)
+                    msg_list["mentions"].append(mention_list)
+                    msg_list["links"].append(links)
+                    msg_list["link_count"].append(link_count)
+                else:
+                    msg_list["emojis"].append(None)
+                    msg_list["mentions"].append(None)
+                    msg_list["links"].append(None)
+                    msg_list["link_count"].append(0)
+                    
+        return msg_list
 
 
 

@@ -9,7 +9,7 @@ import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
 from nltk.corpus import stopwords
-
+import re
 
 def slack_parser(path_channel):
     """ parse slack data to extract useful informations from the json file
@@ -161,7 +161,7 @@ def get_msgs_df_info(df):
 
 def get_tagged_users(df):
     """get all @ in the messages"""
-
+    
     return df['msg_content'].map(lambda x: re.findall(r'@U\w+', x))
 
 
