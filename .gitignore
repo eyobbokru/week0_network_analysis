@@ -12,7 +12,8 @@ conf/**/*credentials*
 # ignore everything in the following folders
 data/**
 logs/**
-
+venv/**
+notebooks/wandb/**
 # except their sub-folders
 !data/**/
 !logs/**/
@@ -87,7 +88,7 @@ MANIFEST
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
-
+*.zip
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
